@@ -74,20 +74,21 @@ int main(int argc, char* argv[])
 				printf("Destination Port : %d\n",ntohs(tcpHeader->th_dport));
 
 				uint16_t ipTotalLength = ntohs(ipHeader->ip_len);
-				int dataLength = ipTotalLength - ipHeaderLength - ((tcpHeader->th_off) * 4);
-
-				packet += sizeof(struct tcphdr);
+				uint8_t tcpHeaderLength = (tcpHeader->th_off) * 4;
+				int dataLength = ipTotalLength - ipHeaderLength - tcpHeaderLength;
+				
+				packet += tcpHeaderLength;
 				printf("data : ");
 
 				if(dataLength >= 16)
 				{
 					for(int i = 0; i < 16; i++)
-						printf("%02x",packet[i]);
+						printf("%02x ",packet[i]);
 				}
 				else if(dataLength > 0 and dataLength <16)
 				{
 					for(int i = 0; i < dataLength; i++)
-						printf("%02x",packet[i]);
+						printf("%02x ",packet[i]);
 					
 				}
 				printf("\n\n");
