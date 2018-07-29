@@ -85,11 +85,10 @@ int main(int argc, char* argv[])
 					for(int i = 0; i < 16; i++)
 						printf("%02x ",packet[i]);
 				}
-				else if(dataLength > 0 and dataLength <16)
+				else if(dataLength > 0 && dataLength <16)
 				{
 					for(int i = 0; i < dataLength; i++)
 						printf("%02x ",packet[i]);
-					
 				}
 				printf("\n\n");
 			}
