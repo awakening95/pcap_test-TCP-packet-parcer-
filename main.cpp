@@ -8,16 +8,18 @@
 #include <arpa/inet.h> // inet.ntoa() 함수를 사용하기 위해 선언한 헤더
 
 
-void usage() {
+void usage() 
+{
 	printf("syntax: pcap_test <interface>\n");
 	printf("sample: pcap_test wlan0\n");
 }
 
 
-void printSrcDstMac(struct ether_header *etherHeader) {
-		printf("Source MAC Address : %02x:%02x:%02x:%02x:%02x:%02x\n", etherHeader->ether_shost[0], etherHeader->ether_shost[1], etherHeader->ether_shost[2], etherHeader->ether_shost[3], etherHeader->ether_shost[4], etherHeader->ether_shost[5]);
+void printSrcDstMac(struct ether_header *etherHeader) 
+{
+	printf("Source MAC Address : %02x:%02x:%02x:%02x:%02x:%02x\n", etherHeader->ether_shost[0], etherHeader->ether_shost[1], etherHeader->ether_shost[2], etherHeader->ether_shost[3], etherHeader->ether_shost[4], etherHeader->ether_shost[5]);
 
-		printf("Destination MAC Address : %02x:%02x:%02x:%02x:%02x:%02x\n", etherHeader->ether_dhost[0], etherHeader->ether_dhost[1], etherHeader->ether_dhost[2], etherHeader->ether_dhost[3], etherHeader->ether_dhost[4], etherHeader->ether_dhost[5]);
+	printf("Destination MAC Address : %02x:%02x:%02x:%02x:%02x:%02x\n", etherHeader->ether_dhost[0], etherHeader->ether_dhost[1], etherHeader->ether_dhost[2], etherHeader->ether_dhost[3], etherHeader->ether_dhost[4], etherHeader->ether_dhost[5]);
 }
 
 
@@ -38,74 +40,59 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	while (true) // TCP 프로토콜만 출력
+	while (true) // TCP 프로토콜만 출발지, 도착지의 mac, ip, port 출력
 	{
 		struct pcap_pkthdr* header;
 		const u_char* packet;
 		int res = pcap_next_ex(handle, &header, &packet);
 		if (res == 0) continue;
 		if (res == -1 || res == -2) break;
-    		printf("%u bytes captured\n", header->caplen);
-
+    		
 		struct ether_header *etherHeader;
-		struct ip *ipHeader;
-		struct tcphdr *tcpHeader;
-
-		// 출발지, 목적지 MAC 주소 출력
 		etherHeader = (struct ether_header *)packet;
-		printSrcDstMac(etherHeader);
-
 		uint16_t etherType = ntohs(etherHeader->ether_type);
-
 		packet += sizeof(struct ether_header);
 
 		if(etherType == ETHERTYPE_IP)
 		{
+			struct ip *ipHeader;
 			ipHeader = (struct ip *)packet;
-
-			printf("Source IP Address : %s\n", inet_ntoa(ipHeader->ip_src));
-			printf("Destination IP Address : %s\n", inet_ntoa(ipHeader->ip_dst));
-
 			uint8_t ipProtocol = ipHeader->ip_p;
 			
 			if(ipProtocol == IPPROTO_TCP)
 			{
 				uint8_t ipHeaderLength = (ipHeader->ip_hl) * 4;
-
 				packet += ipHeaderLength;
-
+				struct tcphdr *tcpHeader;
 				tcpHeader = (struct tcphdr *)packet;
 
+				printf("%u bytes captured\n", header->caplen);
+				printSrcDstMac(etherHeader);
+				printf("Source IP Address : %s\n", inet_ntoa(ipHeader->ip_src));
+				printf("Destination IP Address : %s\n", inet_ntoa(ipHeader->ip_dst));
 				printf("Source Port : %d\n",ntohs(tcpHeader->th_sport));
 				printf("Destination Port : %d\n",ntohs(tcpHeader->th_dport));
 
 				uint16_t ipTotalLength = ntohs(ipHeader->ip_len);
+				int dataLength = ipTotalLength - ipHeaderLength - ((tcpHeader->th_off) * 4);
 
-				int dataLength = ipTotalLength - ipHeaderLength - sizeof(struct tcphdr);
+				packet += sizeof(struct tcphdr);
+				printf("data : ");
 
 				if(dataLength >= 16)
 				{
-					packet += sizeof(struct tcphdr);
-					printf("data : ");
 					for(int i = 0; i < 16; i++)
-					{
 						printf("%02x",packet[i]);
-					}
-					printf("\n");
 				}
-				else if(dataLength <16 and dataLength > 0)
+				else if(dataLength > 0 and dataLength <16)
 				{
-					packet += sizeof(struct tcphdr);
-					printf("data : ");
 					for(int i = 0; i < dataLength; i++)
-					{
 						printf("%02x",packet[i]);
-					}
-					printf("\n");
+					
 				}
+				printf("\n\n");
 			}
 		}
-		printf("\n");
 	}
 	pcap_close(handle);
 	return 0;
